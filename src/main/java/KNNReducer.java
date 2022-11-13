@@ -60,17 +60,11 @@ public class KNNReducer extends Reducer<IntWritable, CovertTwoDPair, IntWritable
         for (int i = 0; i < testNumInstances; i++) {
             Map<Integer, Integer> classMap = new HashMap<Integer, Integer>();
 
-            for (int j = 0; j < k; j++) {
-                Pair pair = new Pair(distMatrix[i][j]);
 
-                int currentClass = (int) pair.getIdx().get();
-
-                if (!classMap.containsKey(currentClass)) {
-                    classMap.put(currentClass, 0);
-                } else {
-                    classMap.put(currentClass, classMap.get(currentClass) + 1);
-                }
-            }
+            Arrays.stream(distMatrix[i]).forEach(distPair -> {
+                int currentClass = (int) distPair.getIdx().get();
+                classMap.put(currentClass, classMap.getOrDefault(currentClass, 0) + 1);
+            });
 
             final int[] predictedClass = {-1};
             final int[] highestClassCount = {0};

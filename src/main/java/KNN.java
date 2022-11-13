@@ -42,7 +42,7 @@ public class KNN {
         job.setMapperClass(KNNMapper.class);
         job.setReducerClass(KNNReducer.class);
 
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(2);
 
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(CovertTwoDPair.class);

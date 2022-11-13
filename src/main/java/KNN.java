@@ -23,10 +23,10 @@ public class KNN {
             System.exit(2);
         }
 
-        Configuration conf = new Configuration();
+        Configuration configuration = new Configuration();
 
-        conf.set("testSetPath", args[1]);
-        conf.setInt("k", Integer.parseInt(args[2]));
+        configuration.set("testSetPath", args[1]);
+        configuration.setInt("k", Integer.parseInt(args[2]));
 
         String path = new File("").getAbsolutePath();
         BufferedReader reader = new BufferedReader(new FileReader(path + System.getProperty("file.separator") + args[1]));
@@ -34,9 +34,9 @@ public class KNN {
         Instances data = arff.getData();
 
         int numInstances = data.numInstances();
-        conf.setInt("testNumInstances", numInstances);
+        configuration.setInt("testNumInstances", numInstances);
 
-        Job job = Job.getInstance(conf, "KNN");
+        Job job = Job.getInstance(configuration, "KNN");
 
         job.setJarByClass(KNN.class);
         job.setMapperClass(KNNMapper.class);
@@ -61,7 +61,7 @@ public class KNN {
         long milliseconds = (endTime - startTime);
 
         File file = new File(path + System.getProperty("file.separator") + "predictions/part-r-00000");
-        Scanner sc = new Scanner(file);
+        Scanner scanner = new Scanner(file);
 
         reader = new BufferedReader(new FileReader(path + System.getProperty("file.separator") + args[1]));
         arff = new ArffReader(reader, 1000);
@@ -71,19 +71,18 @@ public class KNN {
         Instance instance;
         int correct = 0;
 
-        while (sc.hasNextLine() && (instance = arff.readInstance(data)) != null) {
-            sc.nextInt();
-            int prediction = sc.nextInt();
+        while (scanner.hasNextLine() && (instance = arff.readInstance(data)) != null) {
+            scanner.nextInt();
+            int prediction = scanner.nextInt();
 
             if (prediction == (int) instance.classValue()) {
                 correct++;
             }
         }
-        sc.close();
-        reader.close();
 
         double accuracy = (double) correct / numInstances;
-
         System.out.println("It took " + milliseconds + " ms and results have an accuracy of " + accuracy);
+
+        reader.close();
     }
 }

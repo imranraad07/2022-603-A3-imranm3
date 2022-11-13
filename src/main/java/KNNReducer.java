@@ -1,21 +1,16 @@
-import com.sun.org.apache.bcel.internal.generic.SWAP;
-import com.sun.org.apache.xml.internal.security.utils.JavaUtils;
-import jdk.jfr.internal.Utils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Reducer;
-import weka.filters.unsupervised.attribute.SwapValues;
 
 import java.io.IOException;
-import java.sql.Wrapper;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class KNNReducer extends Reducer<IntWritable, CovertTwoDPair, IntWritable, IntWritable> {
     private int k;
-    private int testSize;
+    private int testNumInstances;
 
     private Pair[][] distMatrix;
 
@@ -23,17 +18,15 @@ public class KNNReducer extends Reducer<IntWritable, CovertTwoDPair, IntWritable
     public void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
 
-        Configuration conf = context.getConfiguration();
+        Configuration configuration = context.getConfiguration();
 
-        k = conf.getInt("k", 0);
-        testSize = conf.getInt("testNumInstances", 0);
+        k = configuration.getInt("k", 0);
+        testNumInstances = configuration.getInt("testNumInstances", 0);
 
-        distMatrix = new Pair[testSize][k];
+        distMatrix = new Pair[testNumInstances][k];
 
-        for (int i = 0; i < testSize; i++) {
-            for (int j = 0; j < k; j++) {
-                distMatrix[i][j] = new Pair(-1, Double.MAX_VALUE);
-            }
+        for (int i = 0; i < testNumInstances; i++) {
+            Arrays.fill(distMatrix[i], new Pair(-1, Double.MAX_VALUE));
         }
     }
 
@@ -42,7 +35,7 @@ public class KNNReducer extends Reducer<IntWritable, CovertTwoDPair, IntWritable
         value.forEach(covertTwoDPair -> {
             ConvertPair[][] matrix = (ConvertPair[][]) covertTwoDPair.toArray();
 
-            for (int i = 0; i < testSize; i++) {
+            for (int i = 0; i < testNumInstances; i++) {
                 for (int j = 0; j < k; j++) {
                     Pair current = new Pair((DoubleWritable) matrix[i][j].get()[0], (DoubleWritable) matrix[i][j].get()[1]);
                     Pair tmp = new Pair();
@@ -64,25 +57,25 @@ public class KNNReducer extends Reducer<IntWritable, CovertTwoDPair, IntWritable
 
     @Override
     public void cleanup(Context context) throws IOException, InterruptedException {
-        for (int i = 0; i < testSize; i++) {
-            Map<Integer, Integer> classCounts = new HashMap<Integer, Integer>();
+        for (int i = 0; i < testNumInstances; i++) {
+            Map<Integer, Integer> classMap = new HashMap<Integer, Integer>();
 
             for (int j = 0; j < k; j++) {
-                Pair classDistPair = new Pair(distMatrix[i][j]);
+                Pair pair = new Pair(distMatrix[i][j]);
 
-                int currentClass = (int) classDistPair.getIdx().get();
+                int currentClass = (int) pair.getIdx().get();
 
-                if (!classCounts.containsKey(currentClass)) {
-                    classCounts.put(currentClass, 0);
+                if (!classMap.containsKey(currentClass)) {
+                    classMap.put(currentClass, 0);
                 } else {
-                    classCounts.put(currentClass, classCounts.get(currentClass) + 1);
+                    classMap.put(currentClass, classMap.get(currentClass) + 1);
                 }
             }
 
             final int[] predictedClass = {-1};
             final int[] highestClassCount = {0};
 
-            classCounts.entrySet().stream().forEach(entry -> {
+            classMap.entrySet().stream().forEach(entry -> {
                 int key = entry.getKey();
                 int val = entry.getValue();
 
